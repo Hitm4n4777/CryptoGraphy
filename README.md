@@ -3,8 +3,8 @@ cryptography....
 python file in the repo is the main code.
 
 - To run the code u need
-      - Python (latest -ver prefered)
-      - python library cryptography
+  - Python (latest -ver prefered)
+  - python library cryptography
 
 the code when executed will generate a Secret key in the same directory where the python file is located.
 the encrypted txt will be decrypted using that key.
