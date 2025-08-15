@@ -1,0 +1,51 @@
+import os
+from base64 import urlsafe_b64encode, urlsafe_b64decode
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+KEY_PATH = "secret.key"
+
+def load_or_create_key() -> bytes:
+    if os.path.exists(KEY_PATH):
+        key = open(KEY_PATH, "rb").read()
+        if len(key) not in (16, 24, 32):
+            raise ValueError("Key file is the wrong size. Delete secret.key to regenerate.")
+        return key
+    # 256-bit key (32 bytes)
+    key = AESGCM.generate_key(bit_length=256)
+    with open(KEY_PATH, "wb") as f:
+        f.write(key)
+    return key
+
+SECRET_KEY = load_or_create_key()
+
+def encrypt_message(plaintext: str) -> str:
+    aes = AESGCM(SECRET_KEY)
+    nonce = os.urandom(12)  # must be unique per message
+    ct = aes.encrypt(nonce, plaintext.encode("utf-8"), None)
+    return urlsafe_b64encode(nonce + ct).decode("ascii")
+
+def decrypt_message(token: str) -> str:
+    data = urlsafe_b64decode(token.encode("ascii"))
+    nonce, ct = data[:12], data[12:]
+    aes = AESGCM(SECRET_KEY)
+    pt = aes.decrypt(nonce, ct, None)
+    return pt.decode("utf-8")
+
+if __name__ == "__main__":
+    print("---------------------------------------------------------------")
+    print("      Welcome to the AES-GCM Encryption/Decryption Tool \n")
+    
+    print("          Enter 'e' Encrypt or 'd' Decrypt a Msg")
+    print("---------------------------------------------------------------")
+    mode = input( ).strip().lower()
+    if mode == "e":
+        msg = input("Enter your message: ")
+        print("Encrypted:", encrypt_message(msg))
+    elif mode == "d":
+        enc = input("Enter encrypted text: ")
+        try:
+            print("Decrypted:", decrypt_message(enc))
+        except Exception as e:
+            print("Decryption failed! (Wrong key/corrupted input)")
+    else:
+        print("Unknown mode.")
